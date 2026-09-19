@@ -11,6 +11,8 @@ test('guard permits valid read-only SQLite queries and inspection pragmas', () =
     'PRAGMA table_info("users")',
     'pragma compile_options',
     'PRAGMA database_list',
+    "SELECT * FROM audit_logs WHERE action = 'DELETE' AND status = 'UPDATED'",
+    'SELECT id, created_at, updated_at FROM posts',
   ];
 
   for (const sql of allowed) {

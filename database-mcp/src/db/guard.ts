@@ -75,7 +75,12 @@ export function validateReadOnlyQuery(rawSql: string): string {
     );
   }
 
-  const upperSql = singleQuery.toUpperCase();
+  // Strip string literals before checking for forbidden SQL keywords to prevent false positives in WHERE clauses
+  const sqlWithoutLiterals = singleQuery
+    .replace(/'(?:[^'\\]|\\.)*'/g, "''")
+    .replace(/"(?:[^"\\]|\\.)*"/g, '""');
+
+  const upperSql = sqlWithoutLiterals.toUpperCase();
   for (const forbidden of FORBIDDEN_KEYWORDS) {
     // Use word boundaries so column names like updated_at or created_by are not blocked
     const regex = new RegExp(`\\b${forbidden}\\b`, 'i');

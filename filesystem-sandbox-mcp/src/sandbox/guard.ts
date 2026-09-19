@@ -8,6 +8,21 @@ export class SandboxViolationError extends Error {
   }
 }
 
+function isPathContained(root: string, candidate: string): boolean {
+  const rel = path.relative(root, candidate);
+  if (rel === '' || rel === '.') {
+    return true;
+  }
+  if (rel.startsWith('..') || path.isAbsolute(rel)) {
+    return false;
+  }
+  const isWin = process.platform === 'win32';
+  const normRoot = isWin ? path.resolve(root).toLowerCase() : path.resolve(root);
+  const normCandidate = isWin ? path.resolve(candidate).toLowerCase() : path.resolve(candidate);
+  const sep = path.sep;
+  return normCandidate === normRoot || normCandidate.startsWith(`${normRoot}${sep}`) || normCandidate.startsWith(`${normRoot}/`);
+}
+
 export function resolveSecureSandboxPath(sandboxRoot: string, requestedPath: string = '.'): string {
   if (typeof requestedPath !== 'string') {
     throw new SandboxViolationError('Requested path must be a string.');
@@ -27,16 +42,7 @@ export function resolveSecureSandboxPath(sandboxRoot: string, requestedPath: str
   // Resolve target against root
   const candidatePath = path.resolve(canonicalRoot, sanitizedInput);
 
-  // Format with consistent forward slashes for cross-platform comparison
-  const normalizedRoot = canonicalRoot.split(path.sep).join('/');
-  const normalizedCandidate = candidatePath.split(path.sep).join('/');
-
-  // Verify candidate is exactly root or inside root
-  const isInside =
-    normalizedCandidate === normalizedRoot ||
-    normalizedCandidate.startsWith(`${normalizedRoot}/`);
-
-  if (!isInside) {
+  if (!isPathContained(canonicalRoot, candidatePath)) {
     throw new SandboxViolationError(
       `Directory traversal attempt blocked. Path '${requestedPath}' escapes sandbox root '${sandboxRoot}'.`
     );
@@ -47,14 +53,7 @@ export function resolveSecureSandboxPath(sandboxRoot: string, requestedPath: str
     const realCandidate = fs.realpathSync(candidatePath);
     const realRoot = fs.existsSync(canonicalRoot) ? fs.realpathSync(canonicalRoot) : canonicalRoot;
 
-    const normalizedRealRoot = realRoot.split(path.sep).join('/');
-    const normalizedRealCandidate = realCandidate.split(path.sep).join('/');
-
-    const isRealInside =
-      normalizedRealCandidate === normalizedRealRoot ||
-      normalizedRealCandidate.startsWith(`${normalizedRealRoot}/`);
-
-    if (!isRealInside) {
+    if (!isPathContained(realRoot, realCandidate)) {
       throw new SandboxViolationError(
         `Symlink boundary violation blocked. Real path '${realCandidate}' is outside sandbox.`
       );

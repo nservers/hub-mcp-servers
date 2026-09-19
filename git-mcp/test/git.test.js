@@ -24,4 +24,14 @@ test('GitClientWrapper detects repository and retrieves status and branches', as
   const log = await client.getLog(5);
   assert.ok(Array.isArray(log.all));
   assert.ok(log.all.length > 0);
+
+  await assert.rejects(
+    async () => await client.getDiff('--output=/tmp/evil'),
+    /Option flags starting with '-' are blocked/
+  );
+
+  await assert.rejects(
+    async () => await client.getShow('--help'),
+    /Option flags starting with '-' are blocked/
+  );
 });

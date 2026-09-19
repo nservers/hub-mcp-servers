@@ -41,6 +41,16 @@ export class ScraperEngine {
       throw new Error(`Invalid protocol '${parsed.protocol}'. Only HTTP and HTTPS are permitted.`);
     }
 
+    const hostname = parsed.hostname.toLowerCase();
+    if (
+      hostname === '169.254.169.254' ||
+      hostname === 'metadata.google.internal' ||
+      hostname === 'instance-data' ||
+      hostname.endsWith('.internal')
+    ) {
+      throw new Error(`Access to cloud metadata endpoint '${hostname}' is strictly forbidden.`);
+    }
+
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), this.config.timeoutMs);
 

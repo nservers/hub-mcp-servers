@@ -1,6 +1,14 @@
 import { simpleGit, SimpleGit, StatusResult, LogResult, BranchSummary } from 'simple-git';
 import { AppConfig } from '../config.js';
 
+function validateGitRef(ref: string, fieldName: string): string {
+  const trimmed = ref.trim();
+  if (trimmed.startsWith('-')) {
+    throw new Error(`Invalid ${fieldName} '${ref}'. Option flags starting with '-' are blocked for security.`);
+  }
+  return trimmed;
+}
+
 export class GitClientWrapper {
   private git: SimpleGit;
   private config: AppConfig;
@@ -36,16 +44,20 @@ export class GitClientWrapper {
   }
 
   async getDiff(target?: string, base?: string): Promise<string> {
-    if (target && base) {
-      return await this.git.diff([`${base}..${target}`]);
+    const validTarget = target ? validateGitRef(target, 'target') : undefined;
+    const validBase = base ? validateGitRef(base, 'base') : undefined;
+
+    if (validTarget && validBase) {
+      return await this.git.diff([`${validBase}..${validTarget}`]);
     }
-    if (target) {
-      return await this.git.diff([target]);
+    if (validTarget) {
+      return await this.git.diff([validTarget]);
     }
     return await this.git.diff();
   }
 
   async getShow(revisionOrPath: string): Promise<string> {
-    return await this.git.show([revisionOrPath]);
+    const validRef = validateGitRef(revisionOrPath, 'revisionOrPath');
+    return await this.git.show([validRef]);
   }
 }

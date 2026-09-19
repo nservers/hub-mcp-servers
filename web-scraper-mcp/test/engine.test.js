@@ -50,3 +50,23 @@ test('ScraperEngine converts sample HTML into clean Markdown and extracts headin
   assert.ok(result.wordCount > 5);
   assert.ok(result.estimatedTokens > 5);
 });
+
+test('ScraperEngine blocks cloud metadata and internal link-local endpoints', async () => {
+  const engine = new ScraperEngine({
+    userAgent: 'test-agent',
+    timeoutMs: 5000,
+    maxContentBytes: 100000,
+    portHttp: 3000,
+    hostHttp: '0.0.0.0',
+  });
+
+  await assert.rejects(
+    async () => await engine.scrapeUrl('http://169.254.169.254/latest/meta-data/'),
+    /Access to cloud metadata endpoint/
+  );
+
+  await assert.rejects(
+    async () => await engine.scrapeUrl('http://metadata.google.internal/computeMetadata/v1/'),
+    /Access to cloud metadata endpoint/
+  );
+});

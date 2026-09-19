@@ -31,6 +31,12 @@ test('allows columns with names containing mutation keywords (e.g. updated_at, c
   assert.strictEqual(result, sql);
 });
 
+test('allows string literals containing mutation words in WHERE clauses', () => {
+  const sql = "SELECT * FROM audit_logs WHERE action = 'DELETE' AND status = 'UPDATED'";
+  const result = validateReadOnlyQuery(sql);
+  assert.strictEqual(result, sql);
+});
+
 test('blocks DROP TABLE', () => {
   assert.throws(
     () => validateReadOnlyQuery('DROP TABLE users'),

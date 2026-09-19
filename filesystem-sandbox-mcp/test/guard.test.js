@@ -36,3 +36,17 @@ test('resolveSecureSandboxPath rejects null bytes', () => {
     SandboxViolationError
   );
 });
+
+test('resolveSecureSandboxPath is resilient to path casing on Windows', () => {
+  const root = path.resolve(process.cwd(), 'temp_sandbox_test');
+  const safe = resolveSecureSandboxPath(root, 'sub/nested/file.txt');
+  assert.ok(safe.length > 0);
+
+  if (process.platform === 'win32') {
+    const driveLetter = root.charAt(0);
+    const flippedDrive = driveLetter === driveLetter.toUpperCase() ? driveLetter.toLowerCase() : driveLetter.toUpperCase();
+    const flippedRoot = flippedDrive + root.slice(1);
+    const resolved = resolveSecureSandboxPath(flippedRoot, 'sub/nested/file.txt');
+    assert.ok(resolved.length > 0);
+  }
+});
