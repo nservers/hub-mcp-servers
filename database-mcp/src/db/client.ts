@@ -189,7 +189,7 @@ export class DatabaseClient {
     if (this.pgPool) {
       const client = await this.pgPool.connect();
       try {
-        await client.query('SET statement_timeout = 30000'); // 30s timeout
+        await client.query('SET statement_timeout = 30000');
         const res = await client.query(validatedSql);
         const executionTimeMs = Date.now() - start;
         const total = res.rows.length;
@@ -225,7 +225,7 @@ export class DatabaseClient {
       };
     }
 
-    throw new Error('Nenhum pool de conexão de banco de dados ativo.');
+    throw new Error('No active database connection pool.');
   }
 
   async getDatabaseStats(): Promise<DatabaseStats> {
@@ -270,7 +270,7 @@ export class DatabaseClient {
       };
     }
 
-    throw new Error('Nenhum pool de conexão ativo.');
+    throw new Error('No active connection pool.');
   }
 
   async close(): Promise<void> {

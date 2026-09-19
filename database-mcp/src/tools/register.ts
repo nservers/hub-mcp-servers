@@ -3,10 +3,9 @@ import { z } from 'zod';
 import { DatabaseClient } from '../db/client.js';
 
 export function registerDatabaseTools(server: McpServer, db: DatabaseClient): void {
-  // 1. list_tables
   server.tool(
     'list_tables',
-    'Lista todas as tabelas e views disponíveis no banco de dados com seus respectivos schemas.',
+    'List all tables and views available in the database with their respective schemas.',
     {},
     async () => {
       try {
@@ -32,7 +31,7 @@ export function registerDatabaseTools(server: McpServer, db: DatabaseClient): vo
           content: [
             {
               type: 'text',
-              text: `Erro ao listar tabelas: ${error.message || String(error)}`,
+              text: `Failed to list tables: ${error.message || String(error)}`,
             },
           ],
         };
@@ -40,15 +39,14 @@ export function registerDatabaseTools(server: McpServer, db: DatabaseClient): vo
     }
   );
 
-  // 2. describe_table
   server.tool(
     'describe_table',
-    'Retorna a estrutura completa de colunas, tipos de dados, chaves primárias e constraints de uma tabela.',
+    'Inspect a table structure including columns, data types, nullability, defaults, and primary keys.',
     {
       tableName: z
         .string()
         .min(1)
-        .describe('Nome da tabela a inspecionar (ex: "users" ou "public.orders")'),
+        .describe('Table name to inspect (e.g. "users" or "public.orders")'),
     },
     async ({ tableName }) => {
       try {
@@ -59,7 +57,7 @@ export function registerDatabaseTools(server: McpServer, db: DatabaseClient): vo
             content: [
               {
                 type: 'text',
-                text: `A tabela "${tableName}" não foi encontrada no banco de dados ou não possui colunas visíveis.`,
+                text: `Table "${tableName}" was not found or contains no accessible columns.`,
               },
             ],
           };
@@ -87,7 +85,7 @@ export function registerDatabaseTools(server: McpServer, db: DatabaseClient): vo
           content: [
             {
               type: 'text',
-              text: `Erro ao descrever tabela "${tableName}": ${error.message || String(error)}`,
+              text: `Failed to describe table "${tableName}": ${error.message || String(error)}`,
             },
           ],
         };
@@ -95,22 +93,21 @@ export function registerDatabaseTools(server: McpServer, db: DatabaseClient): vo
     }
   );
 
-  // 3. read_query
   server.tool(
     'read_query',
-    'Executa uma consulta SQL declarativa de leitura (SELECT ou EXPLAIN). Instruções destrutivas são bloqueadas.',
+    'Execute a read-only declarative SQL query (SELECT, EXPLAIN). Mutation statements are blocked.',
     {
       query: z
         .string()
         .min(1)
-        .describe('Instrução SQL declarativa para execução (ex: "SELECT id, name FROM users LIMIT 10")'),
+        .describe('Declarative SQL query to execute (e.g. "SELECT id, name FROM users LIMIT 10")'),
       limit: z
         .number()
         .int()
         .positive()
         .max(5000)
         .optional()
-        .describe('Limite máximo de linhas a retornar (padrão: 1000, máx: 5000)'),
+        .describe('Maximum number of rows to return (default: 1000, max: 5000)'),
     },
     async ({ query, limit }) => {
       try {
@@ -129,7 +126,7 @@ export function registerDatabaseTools(server: McpServer, db: DatabaseClient): vo
           content: [
             {
               type: 'text',
-              text: `Falha na execução da query: ${error.message || String(error)}`,
+              text: `Query execution failed: ${error.message || String(error)}`,
             },
           ],
         };
@@ -137,10 +134,9 @@ export function registerDatabaseTools(server: McpServer, db: DatabaseClient): vo
     }
   );
 
-  // 4. database_stats
   server.tool(
     'database_stats',
-    'Exibe informações e telemetria da conexão com o banco de dados (versão, estatísticas e contagem de tabelas).',
+    'Retrieve database connection telemetry, version details, and table statistics.',
     {},
     async () => {
       try {
@@ -159,7 +155,7 @@ export function registerDatabaseTools(server: McpServer, db: DatabaseClient): vo
           content: [
             {
               type: 'text',
-              text: `Erro ao coletar estatísticas do banco: ${error.message || String(error)}`,
+              text: `Failed to collect database statistics: ${error.message || String(error)}`,
             },
           ],
         };

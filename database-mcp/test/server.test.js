@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert';
 import { spawn } from 'node:child_process';
 
-test('servidor inicia, responde ao healthcheck e exige Bearer token no /sse', async (t) => {
+test('server boots up, responds to healthcheck, and enforces Bearer token on /sse', async (t) => {
   const env = {
     ...process.env,
     PORT: '3999',
@@ -25,29 +25,28 @@ test('servidor inicia, responde ao healthcheck e exige Bearer token no /sse', as
     proc.kill();
   });
 
-  // Aguarda inicialização do servidor
   await new Promise((resolve) => setTimeout(resolve, 1500));
 
-  // 1. Testa /health
+  // Health endpoint test
   const resHealth = await fetch('http://127.0.0.1:3999/health');
-  assert.strictEqual(resHealth.status, 503); // 503 porque o banco local de teste não está ativo, mas o servidor HTTP respondeu perfeitamente
+  assert.strictEqual(resHealth.status, 503);
   const dataHealth = await resHealth.json();
   assert.strictEqual(dataHealth.service, 'database-mcp');
   assert.strictEqual(dataHealth.version, '1.0.0');
 
-  // 2. Testa /sse sem autenticação (deve retornar 401 Unauthorized)
+  // SSE endpoint without auth (expect 401 Unauthorized)
   const resUnauth = await fetch('http://127.0.0.1:3999/sse');
   assert.strictEqual(resUnauth.status, 401);
   const dataUnauth = await resUnauth.json();
   assert.strictEqual(dataUnauth.error, 'Unauthorized');
 
-  // 3. Testa /sse com token inválido (deve retornar 401)
+  // SSE endpoint with invalid Bearer token (expect 401)
   const resWrong = await fetch('http://127.0.0.1:3999/sse', {
-    headers: { Authorization: 'Bearer token_incorreto' },
+    headers: { Authorization: 'Bearer invalid_token' },
   });
   assert.strictEqual(resWrong.status, 401);
 
-  // 4. Testa /sse com token válido
+  // SSE endpoint with valid Bearer token (expect 200 text/event-stream)
   const controller = new AbortController();
   const resAuth = await fetch('http://127.0.0.1:3999/sse', {
     headers: { Authorization: 'Bearer nai_integration_test_secret_token_123' },

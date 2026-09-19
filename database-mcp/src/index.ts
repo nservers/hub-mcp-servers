@@ -12,7 +12,6 @@ app.use(cors({ origin: '*' }));
 
 const db = new DatabaseClient(config);
 
-// Mapa de sessões ativas do transporte SSE
 const transports = new Map<string, SSEServerTransport>();
 
 function authenticate(req: express.Request, res: express.Response, next: express.NextFunction) {
@@ -33,7 +32,7 @@ function authenticate(req: express.Request, res: express.Response, next: express
   if (!token || token !== config.authToken) {
     res.status(401).json({
       error: 'Unauthorized',
-      message: 'Credencial Bearer ausente ou inválida para esta instância do database-mcp.',
+      message: 'Missing or invalid Bearer credentials for database-mcp instance.',
     });
     return;
   }
@@ -41,7 +40,6 @@ function authenticate(req: express.Request, res: express.Response, next: express
   next();
 }
 
-// 1. Healthcheck e Ping públicos (para Traefik, Coolify e diagnóstico no painel)
 app.get(['/health', '/ping'], async (_req, res) => {
   const dbHealth = await db.testConnection();
   const statusCode = dbHealth.ok ? 200 : 503;
@@ -59,9 +57,8 @@ app.get(['/health', '/ping'], async (_req, res) => {
   });
 });
 
-// 2. Endpoint SSE (Server-Sent Events) com autenticação Bearer
 app.get('/sse', authenticate, async (req, res) => {
-  console.log(`[database-mcp] Nova conexão SSE recebida de ${req.ip}`);
+  console.log(`[database-mcp] Inbound SSE connection from ${req.ip}`);
 
   const server = new McpServer({
     name: 'nservers-database-mcp',
@@ -75,60 +72,58 @@ app.get('/sse', authenticate, async (req, res) => {
   transports.set(sessionId, transport);
 
   req.on('close', () => {
-    console.log(`[database-mcp] Conexão SSE encerrada para sessão ${sessionId}`);
+    console.log(`[database-mcp] SSE connection closed for session ${sessionId}`);
     transports.delete(sessionId);
   });
 
   try {
     await server.connect(transport);
-    console.log(`[database-mcp] McpServer conectado ao transporte SSE (sessão: ${sessionId})`);
+    console.log(`[database-mcp] McpServer connected to SSE transport (session: ${sessionId})`);
   } catch (error: any) {
-    console.error(`[database-mcp] Falha ao conectar McpServer ao transporte SSE:`, error);
+    console.error(`[database-mcp] Failed to connect McpServer to SSE transport:`, error);
     transports.delete(sessionId);
     if (!res.headersSent) {
-      res.status(500).json({ error: 'Falha na conexão do servidor MCP.' });
+      res.status(500).json({ error: 'MCP server connection failed.' });
     }
   }
 });
 
-// 3. Endpoint de Mensagens JSON-RPC (POST /messages)
 app.post('/messages', authenticate, express.json(), async (req, res) => {
   const sessionId = req.query.sessionId as string;
   if (!sessionId) {
-    res.status(400).json({ error: 'Parâmetro sessionId é obrigatório na query string.' });
+    res.status(400).json({ error: 'Missing required query parameter: sessionId.' });
     return;
   }
 
   const transport = transports.get(sessionId);
   if (!transport) {
-    res.status(404).json({ error: `Sessão '${sessionId}' não encontrada ou desconectada.` });
+    res.status(404).json({ error: `Session '${sessionId}' not found or disconnected.` });
     return;
   }
 
   try {
     await transport.handlePostMessage(req, res);
   } catch (error: any) {
-    console.error(`[database-mcp] Erro ao processar mensagem JSON-RPC:`, error);
+    console.error(`[database-mcp] Error handling JSON-RPC message:`, error);
     if (!res.headersSent) {
-      res.status(500).json({ error: 'Erro interno ao processar mensagem JSON-RPC.' });
+      res.status(500).json({ error: 'Internal error processing JSON-RPC message.' });
     }
   }
 });
 
 const serverInstance = app.listen(config.portHttp, config.hostHttp, () => {
   console.log(
-    `[database-mcp] Servidor oficial nServers MCP iniciado em http://${config.hostHttp}:${config.portHttp}`
+    `[database-mcp] Official nServers MCP server running at http://${config.hostHttp}:${config.portHttp}`
   );
-  console.log(`[database-mcp] Driver: ${config.connection} | Banco: ${config.database}@${config.host}:${config.port}`);
-  console.log(`[database-mcp] Autenticação Bearer: ${config.authToken ? 'ATIVADA' : 'DESATIVADA'}`);
+  console.log(`[database-mcp] Driver: ${config.connection} | Database: ${config.database}@${config.host}:${config.port}`);
+  console.log(`[database-mcp] Bearer Authentication: ${config.authToken ? 'ENABLED' : 'DISABLED'}`);
 });
 
-// Encerramento limpo (Graceful Shutdown)
 async function shutdown() {
-  console.log('[database-mcp] Encerrando serviços graciosamente...');
+  console.log('[database-mcp] Shutting down gracefully...');
   serverInstance.close(async () => {
     await db.close();
-    console.log('[database-mcp] Conexões fechadas. Encerrado.');
+    console.log('[database-mcp] Connections closed. Exited.');
     process.exit(0);
   });
 }

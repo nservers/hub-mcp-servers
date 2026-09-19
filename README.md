@@ -1,50 +1,50 @@
-# nServers Hub - MCP Servers Official Collection
+# nServers Hub - Official MCP Servers Collection
 
-Coleção oficial de servidores de código aberto compatíveis com o **Model Context Protocol (MCP)** desenvolvidos e mantidos pela equipe da **nServers**.
+Official collection of open-source servers implementing the **Model Context Protocol (MCP)**, maintained by the **nServers** engineering team.
 
-Cada servidor nesta coleção foi projetado para rodar em containers leves (Docker/Alpine), com transporte **Server-Sent Events (SSE)** nativo, autenticação Bearer e políticas rígidas de segurança Zero-Trust.
+Each server in this repository is built to run in lightweight containers (Docker/Alpine), featuring native **Server-Sent Events (SSE)** transport, timing-safe Bearer authentication, and zero-trust security policies.
 
 ---
 
-## Servidores Disponíveis
+## Available Servers
 
-| Diretório | Nome | Transporte | Imagem Docker (GHCR) | Descrição |
+| Directory | Name | Transport | Docker Image (GHCR) | Description |
 |---|---|---|---|---|
-| [`database-mcp/`](./database-mcp) | **Database MCP (PostgreSQL & MySQL)** | SSE (Porta 3000) | `ghcr.io/nservers/hub-mcp-database:latest` | Inspeção de tabelas, schemas e queries seguras somente-leitura (read-only guard) com explain plan. |
+| [`database-mcp/`](./database-mcp) | **Database MCP (PostgreSQL & MySQL)** | SSE (Port 3000) | `ghcr.io/nservers/hub-mcp-database:latest` | Table & schema inspection, telemetry, and strictly read-only SQL queries with AST-level safety guards. |
 
 ---
 
-## Como Rodar Localmente (Exemplo: `database-mcp`)
+## Running Locally (e.g. `database-mcp`)
 
-### 1. Requisitos
-- Node.js 22 LTS ou superior
+### 1. Requirements
+- Node.js 22 LTS or higher
 - npm
 
-### 2. Instalação e Testes
+### 2. Install and Test
 ```bash
 cd database-mcp
 npm install
 npm test
 ```
 
-### 3. Execução em Desenvolvimento
+### 3. Development Server
 ```bash
 npm run dev
 ```
 
-O servidor iniciará em `http://localhost:3000`, disponibilizando:
-- `GET /health`: Healthcheck sem autenticação.
-- `GET /sse`: Endpoint MCP Server-Sent Events (exige header `Authorization: Bearer <token>`).
-- `POST /messages`: Rota de mensagens JSON-RPC 2.0.
+The server listens on `http://localhost:3000`, exposing:
+- `GET /health`: Public healthcheck endpoint.
+- `GET /sse`: Authenticated MCP Server-Sent Events stream (`Authorization: Bearer <token>`).
+- `POST /messages`: JSON-RPC 2.0 message handler.
 
 ---
 
-## Publicação Automática de Imagens (CI/CD)
+## Automated Image Builds (CI/CD)
 
-Este repositório utiliza **GitHub Actions** para compilar e publicar automaticamente as imagens no **GitHub Container Registry (`ghcr.io`)** a cada push na branch `main`.
+This repository uses **GitHub Actions** to build and publish production Docker containers to the **GitHub Container Registry (`ghcr.io`)** on every push to the `main` branch.
 
 ---
 
-## Licença
+## License
 
-Distribuído sob a licença **Apache 2.0**. Consulte os arquivos de licença individuais para mais informações.
+Distributed under the **Apache 2.0** License. See individual package files for additional details.

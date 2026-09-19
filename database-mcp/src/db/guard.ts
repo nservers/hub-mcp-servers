@@ -1,7 +1,3 @@
-/**
- * Guarda de Segurança SQL: Assegura execução estritamente Read-Only em bancos de dados.
- */
-
 export class ReadOnlyViolationError extends Error {
   constructor(message: string) {
     super(message);
@@ -40,20 +36,20 @@ const ALLOWED_INITIAL_VERBS = [
 
 export function validateReadOnlyQuery(rawSql: string): string {
   if (!rawSql || typeof rawSql !== 'string') {
-    throw new ReadOnlyViolationError('A instrução SQL não pode ser vazia.');
+    throw new ReadOnlyViolationError('SQL query cannot be empty.');
   }
 
-  // 1. Remove comentários SQL (-- e /* ... */) para evitar ofuscação
+  // Strip SQL comments to prevent obfuscation
   const cleanedSql = rawSql
     .replace(/\/\*[\s\S]*?\*\//g, ' ')
     .replace(/--.*$/gm, ' ')
     .trim();
 
   if (!cleanedSql) {
-    throw new ReadOnlyViolationError('A instrução SQL não contém código executável.');
+    throw new ReadOnlyViolationError('SQL query does not contain executable code.');
   }
 
-  // 2. Previne SQL injection com múltiplas queries encadeadas por ponto-e-vírgula (ex: SELECT 1; DROP TABLE ...)
+  // Disallow multi-statement queries
   const statements = cleanedSql
     .split(';')
     .map((s) => s.trim())
@@ -61,33 +57,31 @@ export function validateReadOnlyQuery(rawSql: string): string {
 
   if (statements.length > 1) {
     throw new ReadOnlyViolationError(
-      'Múltiplas instruções encadeadas por ponto-e-vírgula (;) são proibidas por segurança.'
+      'Multiple semicolon-separated statements are forbidden for security reasons.'
     );
   }
 
   const singleQuery = statements[0];
 
-  // 3. Extrai o primeiro verbo e valida se é de leitura declarativa
   const matchFirstWord = singleQuery.match(/^([a-zA-Z]+)/);
   if (!matchFirstWord) {
-    throw new ReadOnlyViolationError('Sintaxe SQL inválida.');
+    throw new ReadOnlyViolationError('Invalid SQL syntax.');
   }
 
   const initialVerb = matchFirstWord[1].toUpperCase();
   if (!ALLOWED_INITIAL_VERBS.includes(initialVerb)) {
     throw new ReadOnlyViolationError(
-      `Operação '${initialVerb}' não permitida. Este conector MCP opera estritamente em modo Read-Only (${ALLOWED_INITIAL_VERBS.join(', ')}).`
+      `Operation '${initialVerb}' is not allowed. This MCP server strictly operates in read-only mode (${ALLOWED_INITIAL_VERBS.join(', ')}).`
     );
   }
 
-  // 4. Varre todas as palavras-chave proibidas em busca de comandos de mutação
   const upperSql = singleQuery.toUpperCase();
   for (const forbidden of FORBIDDEN_KEYWORDS) {
-    // Regex com word boundary (\b) para não bloquear colunas que contêm o termo (ex: created_at, update_count)
+    // Use word boundaries so column names like updated_at or created_by are not blocked
     const regex = new RegExp(`\\b${forbidden}\\b`, 'i');
     if (regex.test(upperSql)) {
       throw new ReadOnlyViolationError(
-        `Comando de modificação proibido detectado ('${forbidden}'). Acesso restrito a leitura.`
+        `Forbidden mutation keyword detected ('${forbidden}'). Access is strictly read-only.`
       );
     }
   }
