@@ -1,7 +1,7 @@
 {
   "name": "@nservers/hub-mcp-database",
   "version": "1.0.0",
-  "description": "Conector Oficial nServers MCP para PostgreSQL & MySQL com transporte SSE nativo",
+  "description": "Official nServers MCP server for PostgreSQL & MySQL with native SSE transport and read-only safety guards",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
