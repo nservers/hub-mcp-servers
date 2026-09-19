@@ -1,20 +1,18 @@
 import express from 'express';
 import cors from 'cors';
+import crypto from 'node:crypto';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { loadConfig } from './config.js';
-import { DatabaseClient } from './db/client.js';
-import { registerDatabaseTools } from './tools/register.js';
+import { CloudConnectClient } from './cloud/client.js';
+import { registerCloudConnectTools } from './tools/register.js';
 
 const config = loadConfig();
 const app = express();
 app.use(cors({ origin: '*' }));
 
-const db = new DatabaseClient(config);
-
+const cloud = new CloudConnectClient(config);
 const transports = new Map<string, SSEServerTransport>();
-
-import crypto from 'node:crypto';
 
 function timingSafeCompare(a: string, b: string): boolean {
   const bufA = Buffer.from(a);
@@ -44,7 +42,7 @@ function authenticate(req: express.Request, res: express.Response, next: express
   if (!token || !timingSafeCompare(token, config.authToken)) {
     res.status(401).json({
       error: 'Unauthorized',
-      message: 'Missing or invalid Bearer credentials for database-mcp instance.',
+      message: 'Missing or invalid Bearer credentials for cloud-connect-mcp instance.',
     });
     return;
   }
@@ -53,46 +51,44 @@ function authenticate(req: express.Request, res: express.Response, next: express
 }
 
 app.get(['/health', '/ping'], async (_req, res) => {
-  const dbHealth = await db.testConnection();
-  const statusCode = dbHealth.ok ? 200 : 503;
+  const health = await cloud.testConnection();
+  const statusCode = health.ok ? 200 : 503;
   res.status(statusCode).json({
-    status: dbHealth.ok ? 'healthy' : 'degraded',
-    service: 'database-mcp',
+    status: health.ok ? 'healthy' : 'degraded',
+    service: 'cloud-connect-mcp',
     version: '1.0.0',
-    connection: config.connection,
-    host: config.host,
-    database: config.database,
-    dbLatencyMs: dbHealth.latencyMs,
-    dbError: dbHealth.error,
+    apiUrl: config.apiUrl,
+    latencyMs: health.latencyMs,
+    error: health.error,
     uptimeSeconds: Math.floor(process.uptime()),
     timestamp: new Date().toISOString(),
   });
 });
 
 app.get('/sse', authenticate, async (req, res) => {
-  console.log(`[database-mcp] Inbound SSE connection from ${req.ip}`);
+  console.log(`[cloud-connect-mcp] Inbound SSE connection from ${req.ip}`);
 
   const server = new McpServer({
-    name: 'nservers-database-mcp',
+    name: 'nservers-cloud-connect-mcp',
     version: '1.0.0',
   });
 
-  registerDatabaseTools(server, db);
+  registerCloudConnectTools(server, cloud);
 
   const transport = new SSEServerTransport('/messages', res);
   const sessionId = transport.sessionId;
   transports.set(sessionId, transport);
 
   req.on('close', () => {
-    console.log(`[database-mcp] SSE connection closed for session ${sessionId}`);
+    console.log(`[cloud-connect-mcp] SSE connection closed for session ${sessionId}`);
     transports.delete(sessionId);
   });
 
   try {
     await server.connect(transport);
-    console.log(`[database-mcp] McpServer connected to SSE transport (session: ${sessionId})`);
+    console.log(`[cloud-connect-mcp] McpServer connected to SSE transport (session: ${sessionId})`);
   } catch (error: any) {
-    console.error(`[database-mcp] Failed to connect McpServer to SSE transport:`, error);
+    console.error(`[cloud-connect-mcp] Failed to connect McpServer to SSE transport:`, error);
     transports.delete(sessionId);
     if (!res.headersSent) {
       res.status(500).json({ error: 'MCP server connection failed.' });
@@ -116,7 +112,7 @@ app.post('/messages', authenticate, express.json(), async (req, res) => {
   try {
     await transport.handlePostMessage(req, res);
   } catch (error: any) {
-    console.error(`[database-mcp] Error handling JSON-RPC message:`, error);
+    console.error(`[cloud-connect-mcp] Error handling JSON-RPC message:`, error);
     if (!res.headersSent) {
       res.status(500).json({ error: 'Internal error processing JSON-RPC message.' });
     }
@@ -125,17 +121,16 @@ app.post('/messages', authenticate, express.json(), async (req, res) => {
 
 const serverInstance = app.listen(config.portHttp, config.hostHttp, () => {
   console.log(
-    `[database-mcp] Official nServers MCP server running at http://${config.hostHttp}:${config.portHttp}`
+    `[cloud-connect-mcp] Official nServers MCP server running at http://${config.hostHttp}:${config.portHttp}`
   );
-  console.log(`[database-mcp] Driver: ${config.connection} | Database: ${config.database}@${config.host}:${config.port}`);
-  console.log(`[database-mcp] Bearer Authentication: ${config.authToken ? 'ENABLED' : 'DISABLED'}`);
+  console.log(`[cloud-connect-mcp] Target API: ${config.apiUrl}`);
+  console.log(`[cloud-connect-mcp] Bearer Authentication: ${config.authToken ? 'ENABLED' : 'DISABLED'}`);
 });
 
 async function shutdown() {
-  console.log('[database-mcp] Shutting down gracefully...');
-  serverInstance.close(async () => {
-    await db.close();
-    console.log('[database-mcp] Connections closed. Exited.');
+  console.log('[cloud-connect-mcp] Shutting down gracefully...');
+  serverInstance.close(() => {
+    console.log('[cloud-connect-mcp] Server closed. Exited.');
     process.exit(0);
   });
 }

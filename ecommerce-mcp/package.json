@@ -1,0 +1,39 @@
+{
+  "name": "@nservers/hub-mcp-ecommerce",
+  "version": "1.0.0",
+  "description": "Official nServers MCP server for WooCommerce & Shopify catalog, orders, and customer inspection with native SSE transport",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts",
+    "test": "node --test test/*.test.js"
+  },
+  "keywords": [
+    "nservers",
+    "mcp",
+    "model-context-protocol",
+    "ecommerce",
+    "woocommerce",
+    "shopify",
+    "orders",
+    "catalog",
+    "sse"
+  ],
+  "author": "nServers Engineering <engineering@nservers.io>",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.6.0",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.13.5",
+    "tsx": "^4.19.3",
+    "typescript": "^5.7.3"
+  }
+}

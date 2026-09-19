@@ -1,0 +1,39 @@
+{
+  "name": "@nservers/hub-mcp-docker",
+  "version": "1.0.0",
+  "description": "Official nServers MCP server for Docker Engine inspection, logs, and telemetry with native SSE transport",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts",
+    "test": "node --test test/*.test.js"
+  },
+  "keywords": [
+    "nservers",
+    "mcp",
+    "model-context-protocol",
+    "docker",
+    "containers",
+    "telemetry",
+    "sse"
+  ],
+  "author": "nServers Engineering <engineering@nservers.io>",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.6.0",
+    "cors": "^2.8.5",
+    "dockerode": "^4.0.2",
+    "express": "^4.21.2",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/dockerode": "^3.3.34",
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.13.5",
+    "tsx": "^4.19.3",
+    "typescript": "^5.7.3"
+  }
+}
