@@ -20,6 +20,7 @@ Each server in this repository is built to run in lightweight containers (Docker
 | [`web-scraper-mcp/`](./web-scraper-mcp) | **Active** | SSE (Port 3000) | `ghcr.io/nservers/hub-mcp-web-scraper:latest` | Headless content scraper with automatic HTML-to-Markdown conversion and link discovery for LLM research. |
 | [`messaging-mcp/`](./messaging-mcp) | **Active** | SSE (Port 3000) | `ghcr.io/nservers/hub-mcp-messaging:latest` | Secure webhook and dispatch connector for sending structured alerts to Discord, Slack, and custom HTTP endpoints. |
 | [`filesystem-sandbox-mcp/`](./filesystem-sandbox-mcp) | **Active** | SSE (Port 3000) | `ghcr.io/nservers/hub-mcp-filesystem:latest` | Sandboxed file system navigator with path traversal protection and secure directory search. |
+| [`nservers-platform-mcp/`](./nservers-platform-mcp) | **Active** | SSE (Port 3000) | `ghcr.io/nservers/hub-mcp-nservers-platform:latest` | Official nServers control-plane connector: per-connection PAT forwarding, ability scoping, step-up passthrough and hourly tool budgets for VPS, game servers, operations, audit, nAI runs and status. |
 
 ---
 
