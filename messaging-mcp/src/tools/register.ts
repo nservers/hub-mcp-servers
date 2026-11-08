@@ -98,10 +98,10 @@ export function registerMessagingTools(server: McpServer, dispatcher: MessageDis
         .url()
         .describe('Target webhook HTTP/HTTPS endpoint'),
       payload: z
-        .record(z.any())
+        .record(z.string(), z.any())
         .describe('Structured JSON object payload to transmit'),
       headers: z
-        .record(z.string())
+        .record(z.string(), z.string())
         .optional()
         .default({})
         .describe('Custom HTTP headers to include (e.g. Authorization or X-Signature)'),
